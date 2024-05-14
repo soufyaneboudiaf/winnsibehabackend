@@ -7,11 +7,13 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework_simplejwt.tokens import RefreshToken
 import json
 from .models import user , review , picture , product , reservation
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.exceptions import TokenError
 
 
 
 
-@api_view(('POST'))
+@api_view(['POST'])
 @csrf_exempt
 def register(request):
     if request.method == "POST":
@@ -52,7 +54,7 @@ def register(request):
             "message": "POST request required."
         })
     
-@api_view(('GET'))
+@api_view(['GET'])
 @csrf_exempt
 def search(request):
     if request.method == "GET":
@@ -78,7 +80,7 @@ def search(request):
     
 
     
-@api_view(('POST'))
+@api_view(['POST'])
 @csrf_exempt
 def addProduct(request):
     if request.method == "POST" and request.user.category == "seller":
@@ -113,7 +115,8 @@ def addProduct(request):
             "message": "POST request required."
         })
 
-
+@api_view(['POST'])
+@csrf_exempt
 def addReview(request):
     if request.method == "POST" and request.user.category == "user":
         data = json.loads(request.body)
@@ -139,7 +142,9 @@ def addReview(request):
         return Response(status=status.HTTP_400_BAD_REQUEST , data= {
             "message": "POST request required."
         })
-@api_view(('POST'))
+
+
+@api_view(['POST'])
 @csrf_exempt
 def addPicture(request):
     if request.method == "POST" and request.user.category == "seller":
@@ -165,8 +170,9 @@ def addPicture(request):
         return Response(status=status.HTTP_400_BAD_REQUEST , data= {
             "message": "POST request required."
         })
+
     
-@api_view(('POST'))
+@api_view(['POST'])
 @csrf_exempt
 def reserveProduct(request):
     if request.method == "POST" and request.user.category == "user":
@@ -202,3 +208,209 @@ def reserveProduct(request):
         })
 
 
+@api_view(['POST'])
+@csrf_exempt
+def login(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        email = data["email"]
+        password = data["password"]
+        
+        if email == "" or password == "":
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE, data= {
+                "message": "fields are required."
+            })
+        
+        user = authenticate(email=email , password=password)
+        if user is not None:
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+            return Response(status=status.HTTP_200_OK, data= {
+                "message": "User logged in successfully.",
+                "access_token": access_token,
+                "refresh_token": refresh_token
+            })
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data= {
+                "message": "Invalid credentials."
+            })
+    else:
+        return Response(status=status.HTTP_400_BAD_REQUEST , data= {
+            "message": "POST request required."
+        })
+
+
+@api_view(['POST'])
+@csrf_exempt
+def logout(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        refresh_token = data["refresh_token"]
+        
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data= {
+                "message": "Invalid token."
+            })
+        
+        return Response(status=status.HTTP_200_OK, data= {
+            "message": "User logged out successfully."
+        })
+    else:
+        return Response(status=status.HTTP_400_BAD_REQUEST , data= {
+            "message": "POST request required."
+        })
+    
+
+
+@api_view(['POST'])
+@csrf_exempt
+def favoris(request):
+    if request.method == "POST" and request.user.category == "user":
+        data = json.loads(request.body)
+        product_id = data["product_id"]
+        
+        try:
+            product = product.objects.get(id=product_id)
+        except product.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND, data= {
+                "message": "Product not found."
+            })
+        
+        request.user.favoris.add(product)
+        
+        return Response(status=status.HTTP_200_OK, data= {
+            "message": "Product added to favoris."
+        })
+    
+    else:
+        return Response(status=status.HTTP_400_BAD_REQUEST , data= {
+            "message": "POST request required."
+        })
+    
+
+@api_view(['Post'])
+@csrf_exempt
+def forgetpasssword(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        email = data["email"]    
+        
+        try:
+            user = user.objects.get(email=email)
+        except user.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND, data= {
+                "message": "User not found."
+            })
+        
+        return Response(status=status.HTTP_200_OK, data= {
+        "message": "Password sent to email."
+        })
+    
+    else:
+        return Response(status=status.HTTP_400_BAD_REQUEST , data= {
+            "message": "POST request required."
+        })
+    
+@api_view(['POST'])
+@csrf_exempt
+def sign_up(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        username = data["username"]
+        email = data["email"]
+        password = data["password"]
+        number = data["number"]
+        category = data["category"]
+        first_name = data["first_name"]
+        last_name = data["last_name"]
+        if password == "" or email == "" or username == "" or number == "" or category == "":
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE, data= {
+                "message": "fields are required."
+            })
+        
+        
+        try:
+            newuser = user.objects.create_user(email=email , password=password , category=category , username=username , number=number , first_name=first_name , last_name=last_name)
+            newuser.save()
+        except IntegrityError as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data= {
+                "message": "Email address already taken."
+            })
+        
+        
+        refresh = RefreshToken.for_user(newuser)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+        return Response(status=status.HTTP_201_CREATED, data= {
+            "message": "User created successfully.",
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        })
+    
+    else:
+        return Response(status=status.HTTP_400_BAD_REQUEST , data= {
+            "message": "POST request required."
+        })
+
+
+
+@api_view(['POST'])
+@csrf_exempt
+def sign_in(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        email = data["email"]
+        password = data["password"]
+        if email == "" or password == "":
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE, data= {
+                "message": "fields are required."
+            })
+        
+        user = authenticate(email=email , password=password)
+        if user is not None:
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+            return Response(status=status.HTTP_200_OK, data= {
+                "message": "User logged in successfully.",
+                "access_token": access_token,
+                "refresh_token": refresh_token
+            })
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data= {
+                "message": "Invalid credentials."
+            })
+    else:
+        return Response(status=status.HTTP_400_BAD_REQUEST , data= {
+            "message": "POST request required."
+        })
+
+
+
+
+# @api_view(['POST'])
+# @csrf_exempt
+# def sign_up_with_google(reqeuest):
+#     if reqeuest.method == "POST":
+#     
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+
+    
+
+    

@@ -47,6 +47,9 @@ SIMPLE_JWT = {
 }
 
 
+SITE_ID = 1
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -58,8 +61,24 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api',
     'rest_framework',
-    'corsheaders'
+    'corsheaders',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaucount.providers.google'  #if u wanna do sign in with another plateform just change google with it or add it
 ]
+
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE":[
+            "profile"
+            "email"
+        ],
+        "AUTH_PARAMS" : {"access_type" : "online"}
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -148,3 +167,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'api.user' 
 CORS_ALLOW_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+
+AUTENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend"
+    "allauth.accounts.auth_backends.AuthentificationBackend"
+)
+
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDORECT_URL = "/"
