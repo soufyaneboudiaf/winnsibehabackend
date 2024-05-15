@@ -26,7 +26,8 @@ class user(AbstractBaseUser, PermissionsMixin):
     category = models.CharField(max_length=20 , default="user")# user | seller
     location = models.CharField(max_length=50)
     phone_number = models.CharField(max_length=20 , null=True)
-    
+    is_staff = models.BooleanField(default=True)  # Add this line
+    is_superuser = models.BooleanField(default=True)  # Add this line
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
@@ -68,9 +69,19 @@ class product(models.Model):
     def __str__(self):
         return self.name
 
+
+
+
+
 class reservation(models.Model):
-    user = models.ForeignKey(user, on_delete=models.CASCADE)
     product = models.ForeignKey(product, on_delete=models.CASCADE)
-    quantity = models.IntegerField()
-    total_price = models.FloatField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    seller = models.ForeignKey(user, on_delete=models.CASCADE)
+    firstName = models.CharField(max_length=20)
+    lastName = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=20)
+    wilaya = models.CharField(max_length=20)
+    commune = models.CharField(max_length=20)
+
+
+
+

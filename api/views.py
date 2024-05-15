@@ -9,7 +9,7 @@ import json
 from .models import user , review , picture , product , reservation
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.exceptions import TokenError
-
+from django.core.mail import send_mail
 
 
 
@@ -55,6 +55,7 @@ def register(request):
         })
     
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 @csrf_exempt
 def search(request):
     if request.method == "GET":
@@ -81,6 +82,7 @@ def search(request):
 
     
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 @csrf_exempt
 def addProduct(request):
     if request.method == "POST" and request.user.category == "seller":
@@ -116,6 +118,7 @@ def addProduct(request):
         })
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 @csrf_exempt
 def addReview(request):
     if request.method == "POST" and request.user.category == "user":
@@ -145,6 +148,7 @@ def addReview(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 @csrf_exempt
 def addPicture(request):
     if request.method == "POST" and request.user.category == "seller":
@@ -172,40 +176,7 @@ def addPicture(request):
         })
 
     
-@api_view(['POST'])
-@csrf_exempt
-def reserveProduct(request):
-    if request.method == "POST" and request.user.category == "user":
-        data = json.loads(request.body)
-        product_id = data["product_id"]
-        quantity = data["quantity"]
-        
-        try:
-            product = product.objects.get(id=product_id)
-        except product.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND, data= {
-                "message": "Product not found."
-            })
-        
-        if product.quantity < quantity:
-            return Response(status=status.HTTP_400_BAD_REQUEST, data= {
-                "message": "Not enough quantity."
-            })
-        
-        newreservation = reservation.objects.create(user=request.user , product=product , quantity=quantity)
-        newreservation.save()
 
-        product.quantity -= quantity
-        product.save()
-        
-        return Response(status=status.HTTP_201_CREATED, data= {
-            "message": "Product reserved successfully."
-        })
-    
-    else:
-        return Response(status=status.HTTP_400_BAD_REQUEST , data= {
-            "message": "POST request required."
-        })
 
 
 @api_view(['POST'])
@@ -317,49 +288,6 @@ def forgetpasssword(request):
     
 @api_view(['POST'])
 @csrf_exempt
-def sign_up(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        username = data["username"]
-        email = data["email"]
-        password = data["password"]
-        number = data["number"]
-        category = data["category"]
-        first_name = data["first_name"]
-        last_name = data["last_name"]
-        if password == "" or email == "" or username == "" or number == "" or category == "":
-            return Response(status=status.HTTP_406_NOT_ACCEPTABLE, data= {
-                "message": "fields are required."
-            })
-        
-        
-        try:
-            newuser = user.objects.create_user(email=email , password=password , category=category , username=username , number=number , first_name=first_name , last_name=last_name)
-            newuser.save()
-        except IntegrityError as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST, data= {
-                "message": "Email address already taken."
-            })
-        
-        
-        refresh = RefreshToken.for_user(newuser)
-        access_token = str(refresh.access_token)
-        refresh_token = str(refresh)
-        return Response(status=status.HTTP_201_CREATED, data= {
-            "message": "User created successfully.",
-            "access_token": access_token,
-            "refresh_token": refresh_token
-        })
-    
-    else:
-        return Response(status=status.HTTP_400_BAD_REQUEST , data= {
-            "message": "POST request required."
-        })
-
-
-
-@api_view(['POST'])
-@csrf_exempt
 def sign_in(request):
     if request.method == "POST":
         data = json.loads(request.body)
@@ -394,7 +322,7 @@ def sign_in(request):
 
 # @api_view(['POST'])
 # @csrf_exempt
-# def sign_up_with_google(reqeuest):
+# def sign_in_with_google(reqeuest):
 #     if reqeuest.method == "POST":
 #     
 #
@@ -413,4 +341,42 @@ def sign_in(request):
 
     
 
-    
+@api_view(['POST' , 'GET'])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+def reserveProduct(request , requestId):
+    if request.method == "POST":
+        
+        data = json.loads(request.body)
+        firstName = data["firstName"]
+        lastName = data["lastName"]       
+        wilaya = data["wilaya"]
+        commune = data["commune"]
+        phone_number = data["phone_number"]
+
+        try:
+            product = product.objects.get(id=requestId)
+        except product.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND, data= {
+                "message": "Product not found."
+            })
+        try :
+            
+            reservation = reservation.objects.create(product=product , seller=product.seller , firstName=firstName , lastName=lastName , phone_number=phone_number , wilaya=wilaya , commune=commune)
+            reservation.save()
+        except IntegrityError as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data= {
+                "message": "Reservation already exists."
+            })
+        message = "New reservation from " + firstName + " " + lastName + " for " + product.name + " by " + request.user.email + 'wilaya : ' + wilaya + 'commune : ' + commune + 'phone number : ' + phone_number
+        print("hello")
+        # send_mail(
+        #     'New reservation',  # subject
+        #     message,  # message
+        #     "winsibeha@gmail.com",  # from email
+        #     [product.seller.email],  # to email
+        #     fail_silently=False,
+        # )
+
+        
+            

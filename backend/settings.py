@@ -53,22 +53,23 @@ SITE_ID = 1
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'api',
     'rest_framework',
     'corsheaders',
     'django.contrib.sites',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaucount.providers.google'  #if u wanna do sign in with another plateform just change google with it or add it
+    #if u wanna do sign in with another platform just change google with it or add it
 ]
-
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
@@ -89,9 +90,17 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "corsheaders.middleware.CorsMiddleware",
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # Add this line
 ]
 
 ROOT_URLCONF = 'backend.urls'
+AUTH_USER_MODEL = 'api.user'
 
 TEMPLATES = [
     {
@@ -170,10 +179,36 @@ CORS_ALLOW_CREDENTIALS = True
 
 
 AUTENTICATION_BACKENDS = (
-    "django.contrib.auth.backends.ModelBackend"
-    "allauth.accounts.auth_backends.AuthentificationBackend"
-)
+     "django.contrib.auth.backends.ModelBackend"
+     "allauth.accounts.auth_backends.AuthentificationBackend"
+ )
 
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDORECT_URL = "/"
+
+
+
+
+JAZZMIN_SETTINGS={
+    #"show_ui_builder" :True,
+
+    "site_title": "DARKFORGE Admin",
+    'site_header':'DARKFORGE',
+    "copyright": "H3x_Katana",
+    "site_brand":"WELCOME",
+    "site_logo":"assests/images/lg.png",
+
+}
+
+JAZZMIN_UI_TWEAKS = {
+     "theme": "sketchy",
+  
+}
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'winsibeha@gmail.com'
+EMAIL_HOST_PASSWORD = 'password'
