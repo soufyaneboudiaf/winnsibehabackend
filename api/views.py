@@ -369,14 +369,13 @@ def reserveProduct(request , requestId):
                 "message": "Reservation already exists."
             })
         message = "New reservation from " + firstName + " " + lastName + " for " + product.name + " by " + request.user.email + 'wilaya : ' + wilaya + 'commune : ' + commune + 'phone number : ' + phone_number
-        print("hello")
-        # send_mail(
-        #     'New reservation',  # subject
-        #     message,  # message
-        #     "winsibeha@gmail.com",  # from email
-        #     [product.seller.email],  # to email
-        #     fail_silently=False,
-        # )
+        send_mail(
+            'New reservation',  # subject
+            message,  # message
+            "winsibeha@gmail.com",  # from email
+            [product.seller.email],  # to email
+            fail_silently=False,
+        )
 
         
             
